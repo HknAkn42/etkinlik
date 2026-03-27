@@ -1,0 +1,5 @@
+{
+  "name": "Etkinlik",
+  "description": "Kapsamlı etkinlik yönetimi, biletleme ve firmalar için SaaS platformu.",
+  "requestFramePermissions": ["camera"]
+}
