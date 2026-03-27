@@ -53,21 +53,10 @@ export interface Event {
   date: string;
   location: string;
   status: 'draft' | 'published' | 'cancelled';
-  category: string;
-  firmId: string;
-  createdAt: string;
-  tables?: Table[];
-  firmName?: string;
-  firmLogo?: string;
-}
-  firmId: string;
-  title: string;
-  description: string;
-  date: string;
-  location: string;
-  tables: Table[];
-  status: 'draft' | 'published' | 'cancelled';
   category?: string;
+  firmId: string;
+  createdAt?: string;
+  tables?: Table[];
   firmName?: string;
   firmLogo?: string;
 }
