@@ -78,7 +78,21 @@ export default function Login() {
         </form>
 
         <div className="mt-8 pt-6 border-t border-neutral-100 text-center">
-          <p className="text-xs text-neutral-400 uppercase tracking-widest font-bold">Güvenli SaaS Platformu</p>
+          <p className="text-xs text-neutral-400 uppercase tracking-widest font-bold mb-4">Güvenli SaaS Platformu</p>
+          
+          <div className="space-y-3 text-left">
+            <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-200">
+              <p className="text-xs font-bold text-neutral-600 mb-1">SuperAdmin Hesabı:</p>
+              <p className="text-xs text-neutral-500">E-posta: superadmin@etkinlik.com</p>
+              <p className="text-xs text-neutral-500">Şifre: superadmin123</p>
+            </div>
+            
+            <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-200">
+              <p className="text-xs font-bold text-emerald-600 mb-1">Demo Firma Hesabı:</p>
+              <p className="text-xs text-emerald-500">E-posta: admin@demo.com</p>
+              <p className="text-xs text-emerald-500">Şifre: demo123</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
