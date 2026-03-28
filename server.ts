@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
-// import { createServer as createViteServer } from 'vite'; // Disabled for deployment
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
@@ -17,11 +16,10 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-console.log('Database temporarily disabled for deployment');
+// Database initialization (disabled for now)
+console.log('Database initialization skipped for deployment');
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 const PORT = parseInt(process.env.PORT || '3000', 10);
-
-console.log('Database initialization skipped for deployment');
 
 const app = express();
 
