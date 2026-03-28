@@ -3,10 +3,93 @@ import Database from 'better-sqlite3';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-// Database setup - production için dosya yolu düzeltme
+// Database setup - Vercel için
 const getDb = () => {
-  const dbPath = process.env.NODE_ENV === 'production' ? '/tmp/etkinlik.db' : './etkinlik.db';
-  return new Database(dbPath);
+  try {
+    // Production ortamda memory database kullan
+    if (process.env.NODE_ENV === 'production') {
+      // Vercel serverless için geçici çözüm
+      const db = new Database(':memory:');
+      
+      // Test verilerini ekle
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+          id TEXT PRIMARY KEY,
+          email TEXT UNIQUE NOT NULL,
+          password TEXT NOT NULL,
+          displayName TEXT,
+          role TEXT NOT NULL,
+          firmId TEXT,
+          permissions TEXT,
+          createdAt TEXT NOT NULL
+        );
+        
+        CREATE TABLE IF NOT EXISTS firms (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          ownerEmail TEXT UNIQUE NOT NULL,
+          createdAt TEXT NOT NULL,
+          status TEXT DEFAULT 'active',
+          licenseExpiry TEXT,
+          licenseStatus TEXT DEFAULT 'trial'
+        );
+      `);
+      
+      // Test kullanıcıları ekle
+      const hashedPassword = bcrypt.hashSync('superadmin123', 10);
+      db.prepare('INSERT OR IGNORE INTO users (id, email, password, displayName, role, firmId, permissions, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+        'superadmin-1',
+        'superadmin@etkinlik.com',
+        hashedPassword,
+        'Super Admin',
+        'superadmin',
+        null,
+        JSON.stringify({
+          canSell: true,
+          canScan: true,
+          canViewRevenue: true,
+          canManageEvents: true,
+          canManageStaff: true
+        }),
+        new Date().toISOString()
+      );
+      
+      const demoPassword = bcrypt.hashSync('demo123', 10);
+      db.prepare('INSERT OR IGNORE INTO users (id, email, password, displayName, role, firmId, permissions, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+        'demo-user-1',
+        'admin@demo.com',
+        demoPassword,
+        'Demo Admin',
+        'firmadmin',
+        'demo-firm-1',
+        JSON.stringify({
+          canSell: true,
+          canScan: true,
+          canViewRevenue: true,
+          canManageEvents: true,
+          canManageStaff: true
+        }),
+        new Date().toISOString()
+      );
+      
+      db.prepare('INSERT OR IGNORE INTO firms (id, name, ownerEmail, createdAt, status, licenseExpiry, licenseStatus) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
+        'demo-firm-1',
+        'Demo Firma',
+        'admin@demo.com',
+        new Date().toISOString(),
+        'active',
+        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        'trial'
+      );
+      
+      return db;
+    } else {
+      return new Database('./etkinlik.db');
+    }
+  } catch (error) {
+    console.error('Database error:', error);
+    return new Database(':memory:');
+  }
 };
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
@@ -34,12 +117,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const db = getDb();
     
-    // Tablo var mı kontrol et
-    const tableExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").get();
-    if (!tableExists) {
-      return res.status(500).json({ error: 'Veritabanı hazır değil' });
-    }
-
     const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase()) as any;
     
     if (!user || !bcrypt.compareSync(password, user.password)) {
