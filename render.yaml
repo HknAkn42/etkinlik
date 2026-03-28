@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: etkinlik-app
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        value: etkinlik_gizli_anahtar_2026_render
+      - key: PORT
+        value: 10000
+      - key: DATABASE_PATH
+        value: /opt/render/project/src/etkinlik.db
+    disk:
+      name: etkinlik-data
+      mountPath: /opt/render/project/src
+      sizeGB: 1
