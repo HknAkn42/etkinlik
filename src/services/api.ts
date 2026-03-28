@@ -43,9 +43,37 @@ const mockFirm = {
   demoMode: false
 };
 
-// Yeni oluşturulan firmalar için kullanıcılar
-let dynamicUsers = [...mockUsers];
-let dynamicFirms = [mockFirm];
+// LocalStorage'dan verileri yükle
+const loadDynamicData = () => {
+  try {
+    const savedUsers = localStorage.getItem('dynamicUsers');
+    const savedFirms = localStorage.getItem('dynamicFirms');
+    
+    return {
+      dynamicUsers: savedUsers ? JSON.parse(savedUsers) : [...mockUsers],
+      dynamicFirms: savedFirms ? JSON.parse(savedFirms) : [mockFirm]
+    };
+  } catch (error) {
+    console.error('Error loading dynamic data:', error);
+    return {
+      dynamicUsers: [...mockUsers],
+      dynamicFirms: [mockFirm]
+    };
+  }
+};
+
+// LocalStorage'a verileri kaydet
+const saveDynamicData = (users: any[], firms: any[]) => {
+  try {
+    localStorage.setItem('dynamicUsers', JSON.stringify(users));
+    localStorage.setItem('dynamicFirms', JSON.stringify(firms));
+  } catch (error) {
+    console.error('Error saving dynamic data:', error);
+  }
+};
+
+// Başlangıç verileri
+const { dynamicUsers, dynamicFirms } = loadDynamicData();
 
 class StandaloneApiService {
   private token: string | null = null;
@@ -71,8 +99,9 @@ class StandaloneApiService {
     // Simüle edilmiş async bekleme
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    // Static kullanıcılar + dinamik kullanıcılar
-    const allUsers = [...mockUsers, ...dynamicUsers];
+    // LocalStorage'dan güncel kullanıcıları yükle
+    const { dynamicUsers: currentUsers } = loadDynamicData();
+    const allUsers = [...mockUsers, ...currentUsers];
     const user = allUsers.find(u => u.email === email && u.password === password);
     
     if (!user) {
@@ -104,8 +133,9 @@ class StandaloneApiService {
     const token = this.getToken();
     if (!token) throw new Error('Token bulunamadı');
     
-    // Static kullanıcılar + dinamik kullanıcılar
-    const allUsers = [...mockUsers, ...dynamicUsers];
+    // LocalStorage'dan güncel kullanıcıları yükle
+    const { dynamicUsers: currentUsers } = loadDynamicData();
+    const allUsers = [...mockUsers, ...currentUsers];
     const user = allUsers.find(u => token.includes(u.id));
     if (!user) throw new Error('Kullanıcı bulunamadı');
     
@@ -115,8 +145,9 @@ class StandaloneApiService {
   async getFirm(firmId: string) {
     await new Promise(resolve => setTimeout(resolve, 300));
     
-    // Static firm + dinamik firmalar
-    const allFirms = [mockFirm, ...dynamicFirms];
+    // LocalStorage'dan güncel firmaları yükle
+    const { dynamicFirms: currentFirms } = loadDynamicData();
+    const allFirms = [mockFirm, ...currentFirms];
     const firm = allFirms.find(f => f.id === firmId);
     
     return firm || mockFirm;
@@ -177,7 +208,10 @@ class StandaloneApiService {
 
   async getFirms() {
     await new Promise(resolve => setTimeout(resolve, 300));
-    return [mockFirm];
+    
+    // LocalStorage'dan güncel verileri yükle
+    const { dynamicFirms: currentFirms } = loadDynamicData();
+    return currentFirms;
   }
 
   async getEvents() {
@@ -317,9 +351,11 @@ class StandaloneApiService {
       }
     };
     
-    // Dinamik listelere ekle
-    dynamicFirms.push(newFirm);
-    dynamicUsers.push(newUser);
+    // Dinamik listelere ekle ve kaydet
+    const allUsers = [...dynamicUsers, newUser];
+    const allFirms = [...dynamicFirms, newFirm];
+    
+    saveDynamicData(allUsers, allFirms);
     
     return newFirm;
   }
