@@ -41,9 +41,9 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalRevenue: 0,
-    totalSales: 0,
+    totalTickets: 0,
     activeEvents: 0,
-    totalCustomers: 0
+    totalUsers: 0
   });
   const [recentSales, setRecentSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,11 +79,10 @@ export default function Dashboard() {
         const statsData = await api.getStats();
         setStats({
           totalRevenue: statsData.totalRevenue,
-          totalSales: statsData.totalSales,
+          totalTickets: statsData.totalTickets,
           activeEvents: statsData.activeEvents,
-          totalCustomers: statsData.totalCustomers
+          totalUsers: statsData.totalUsers
         });
-        setRecentSales(statsData.recentSales);
 
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -105,10 +104,10 @@ export default function Dashboard() {
   }
 
   const statCards = [
-    { title: 'Toplam Gelir', value: `₺${stats.totalRevenue.toLocaleString()}`, icon: DollarSign, trend: stats.totalRevenue > 0 ? '+12.5%' : '0%', isUp: stats.totalRevenue > 0 },
-    { title: 'Toplam Satış', value: stats.totalSales.toLocaleString(), icon: Ticket, trend: stats.totalSales > 0 ? '+5.2%' : '0%', isUp: stats.totalSales > 0 },
-    { title: 'Aktif Etkinlikler', value: stats.activeEvents.toString(), icon: Calendar, trend: stats.activeEvents > 0 ? '-2.1%' : '0%', isUp: stats.activeEvents > 0 },
-    { title: 'Müşteriler', value: stats.totalCustomers.toLocaleString(), icon: Users, trend: stats.totalCustomers > 0 ? '+18.3%' : '0%', isUp: stats.totalCustomers > 0 },
+    { title: 'Toplam Gelir', value: `₺${(stats.totalRevenue || 0).toLocaleString()}`, icon: DollarSign, trend: stats.totalRevenue > 0 ? '+12.5%' : '0%', isUp: stats.totalRevenue > 0 },
+    { title: 'Toplam Satış', value: (stats.totalTickets || 0).toLocaleString(), icon: Ticket, trend: stats.totalTickets > 0 ? '+5.2%' : '0%', isUp: stats.totalTickets > 0 },
+    { title: 'Aktif Etkinlikler', value: (stats.activeEvents || 0).toString(), icon: Calendar, trend: stats.activeEvents > 0 ? '-2.1%' : '0%', isUp: stats.activeEvents > 0 },
+    { title: 'Müşteriler', value: (stats.totalUsers || 0).toLocaleString(), icon: Users, trend: stats.totalUsers > 0 ? '+18.3%' : '0%', isUp: stats.totalUsers > 0 },
   ];
 
   return (
