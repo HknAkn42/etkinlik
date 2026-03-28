@@ -1,81 +1,7 @@
-// Standalone Frontend - Hiçbir API çağrısı yapmadan
-const mockUsers = [
-  {
-    id: 'superadmin-1',
-    email: 'superadmin@etkinlik.com',
-    password: 'superadmin123',
-    displayName: 'Super Admin',
-    role: 'superadmin',
-    firmId: null,
-    permissions: {
-      canSell: true,
-      canScan: true,
-      canViewRevenue: true,
-      canManageEvents: true,
-      canManageStaff: true
-    }
-  },
-  {
-    id: 'demo-user-1',
-    email: 'admin@demo.com',
-    password: 'demo123',
-    displayName: 'Demo Admin',
-    role: 'firmadmin',
-    firmId: 'demo-firm-1',
-    permissions: {
-      canSell: true,
-      canScan: true,
-      canViewRevenue: true,
-      canManageEvents: true,
-      canManageStaff: true
-    }
-  }
-];
+// Backend API Service
+const API_BASE_URL = 'https://etkinlik-app-7n95.onrender.com';
 
-const mockFirm = {
-  id: 'demo-firm-1',
-  name: 'Demo Firma',
-  ownerEmail: 'admin@demo.com',
-  subscriptionPrice: 299,
-  subscriptionType: 'monthly',
-  licenseExpiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-  licenseStatus: 'trial',
-  demoMode: false
-};
-
-// LocalStorage'dan verileri yükle
-const loadDynamicData = () => {
-  try {
-    const savedUsers = localStorage.getItem('dynamicUsers');
-    const savedFirms = localStorage.getItem('dynamicFirms');
-    
-    return {
-      dynamicUsers: savedUsers ? JSON.parse(savedUsers) : [...mockUsers],
-      dynamicFirms: savedFirms ? JSON.parse(savedFirms) : [mockFirm]
-    };
-  } catch (error) {
-    console.error('Error loading dynamic data:', error);
-    return {
-      dynamicUsers: [...mockUsers],
-      dynamicFirms: [mockFirm]
-    };
-  }
-};
-
-// LocalStorage'a verileri kaydet
-const saveDynamicData = (users: any[], firms: any[]) => {
-  try {
-    localStorage.setItem('dynamicUsers', JSON.stringify(users));
-    localStorage.setItem('dynamicFirms', JSON.stringify(firms));
-  } catch (error) {
-    console.error('Error saving dynamic data:', error);
-  }
-};
-
-// Başlangıç verileri
-const { dynamicUsers, dynamicFirms } = loadDynamicData();
-
-class StandaloneApiService {
+class ApiService {
   private token: string | null = null;
 
   setToken(token: string | null) {
@@ -94,290 +20,185 @@ class StandaloneApiService {
     return this.token;
   }
 
-  // Hiçbir fetch çağrısı yapmıyor - her şey mock
-  async login(email: string, password: string) {
-    // Simüle edilmiş async bekleme
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // LocalStorage'dan güncel kullanıcıları yükle
-    const { dynamicUsers: currentUsers } = loadDynamicData();
-    const allUsers = [...mockUsers, ...currentUsers];
-    const user = allUsers.find(u => u.email === email && u.password === password);
-    
-    if (!user) {
-      throw new Error('Geçersiz e-posta veya şifre');
-    }
-    
-    const token = 'mock-token-' + user.id;
-    this.setToken(token);
-    
-    return {
-      id: user.id,
-      email: user.email,
-      displayName: user.displayName,
-      role: user.role,
-      firmId: user.firmId,
-      permissions: user.permissions,
-      token
+  private async fetch(endpoint: string, options: RequestInit = {}) {
+    const url = `${API_BASE_URL}/api${endpoint}`;
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(this.token && { Authorization: `Bearer ${this.token}` }),
+      ...options.headers,
     };
+
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Network error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async login(email: string, password: string) {
+    const response = await this.fetch('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+
+    this.setToken(response.token);
+    return response.user;
   }
 
   async logout() {
-    await new Promise(resolve => setTimeout(resolve, 200));
     this.setToken(null);
   }
 
   async getMe() {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const token = this.getToken();
-    if (!token) throw new Error('Token bulunamadı');
-    
-    // LocalStorage'dan güncel kullanıcıları yükle
-    const { dynamicUsers: currentUsers } = loadDynamicData();
-    const allUsers = [...mockUsers, ...currentUsers];
-    const user = allUsers.find(u => token.includes(u.id));
-    if (!user) throw new Error('Kullanıcı bulunamadı');
-    
-    return user;
+    return this.fetch('/auth/me');
+  }
+
+  async register(data: {
+    email: string;
+    password: string;
+    displayName: string;
+    firmName?: string;
+  }) {
+    const response = await this.fetch('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+    this.setToken(response.token);
+    return response.user;
   }
 
   async getFirm(firmId: string) {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // LocalStorage'dan güncel firmaları yükle
-    const { dynamicFirms: currentFirms } = loadDynamicData();
-    const allFirms = [mockFirm, ...currentFirms];
-    const firm = allFirms.find(f => f.id === firmId);
-    
-    return firm || mockFirm;
+    return this.fetch(`/firms/${firmId}`);
   }
 
   async updateFirm(firmId: string, data: any) {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return { ...mockFirm, ...data };
+    return this.fetch(`/firms/${firmId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
   }
 
   async validateTicket(qrData: string) {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // QR veriyi parse et
-    let ticketData;
-    try {
-      ticketData = JSON.parse(qrData);
-    } catch (error) {
-      throw new Error('Geçersiz QR kod formatı');
-    }
-
-    return {
-      success: true,
-      ticket: {
-        id: ticketData.ticketId || 'demo-ticket-1',
-        customerName: 'Demo Müşteri',
-        customerPhone: '05551234567',
-        eventTitle: 'Demo Etkinlik',
-        eventDate: new Date().toISOString(),
-        eventLocation: 'Demo Mekan',
-        status: 'validated'
-      }
-    };
+    return this.fetch('/tickets/validate', {
+      method: 'POST',
+      body: JSON.stringify({ qrData }),
+    });
   }
 
   async approvePayment(data: any) {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return {
-      success: true,
-      message: 'Ödeme onayı başarılı'
-    };
+    return this.fetch('/payments/approve', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   async createLog(data: any) {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    return { success: true };
+    return this.fetch('/logs', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   async getStats() {
-    await new Promise(resolve => setTimeout(resolve, 400));
-    return {
-      totalRevenue: 15000,
-      totalTickets: 150,
-      activeEvents: 5,
-      totalUsers: 25
-    };
+    return this.fetch('/stats');
   }
 
   async getFirms() {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // LocalStorage'dan güncel verileri yükle
-    const { dynamicFirms: currentFirms } = loadDynamicData();
-    return currentFirms;
+    return this.fetch('/firms');
   }
 
   async getEvents() {
-    await new Promise(resolve => setTimeout(resolve, 400));
-    return [
-      {
-        id: 'demo-event-1',
-        title: 'Demo Etkinlik',
-        description: 'Bu bir demo etkinliktir',
-        date: new Date().toISOString(),
-        location: 'Demo Mekan',
-        category: 'Konser',
-        firmId: 'demo-firm-1',
-        status: 'active',
-        tables: []
-      }
-    ];
+    return this.fetch('/events');
   }
 
   async createEvent(data: any) {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return { id: 'new-event-1', ...data };
+    return this.fetch('/events', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   async updateEvent(id: string, data: any) {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return { id, ...data };
+    return this.fetch(`/events/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
   }
 
   async deleteEvent(id: string) {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return { success: true };
+    return this.fetch(`/events/${id}`, {
+      method: 'DELETE',
+    });
   }
 
   async getSales() {
-    await new Promise(resolve => setTimeout(resolve, 400));
-    return [
-      {
-        id: 'demo-sale-1',
-        eventId: 'demo-event-1',
-        customerName: 'Demo Müşteri',
-        customerPhone: '05551234567',
-        items: [],
-        totalAmount: 299,
-        status: 'completed',
-        createdAt: new Date().toISOString()
-      }
-    ];
+    return this.fetch('/sales');
   }
 
   async createSale(data: any) {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return { id: 'new-sale-1', ...data };
+    return this.fetch('/sales', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   async getStaff() {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return [
-      {
-        id: 'demo-staff-1',
-        email: 'staff@demo.com',
-        displayName: 'Demo Personel',
-        role: 'staff',
-        permissions: { canSell: true, canScan: true }
-      }
-    ];
+    return this.fetch('/staff');
   }
 
   async createStaff(data: any) {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return { id: 'new-staff-1', ...data };
+    return this.fetch('/staff', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   async deleteStaff(id: string) {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return { success: true };
+    return this.fetch(`/staff/${id}`, {
+      method: 'DELETE',
+    });
   }
 
   async getTickets() {
-    await new Promise(resolve => setTimeout(resolve, 400));
-    return [
-      {
-        id: 'demo-ticket-1',
-        eventId: 'demo-event-1',
-        customerName: 'Demo Müşteri',
-        customerPhone: '05551234567',
-        status: 'valid',
-        createdAt: new Date().toISOString()
-      }
-    ];
+    return this.fetch('/tickets');
   }
 
   async createTicket(data: any) {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return { id: 'new-ticket-1', ...data };
+    return this.fetch('/tickets', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   async checkInTicket(id: string) {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return { success: true, status: 'used' };
+    return this.fetch(`/tickets/${id}/checkin`, {
+      method: 'POST',
+    });
   }
 
   async createFirm(data: any) {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const newFirm = {
-      id: 'new-firm-' + Date.now(),
-      name: data.name,
-      ownerEmail: data.ownerEmail,
-      createdAt: new Date().toISOString(),
-      status: 'active',
-      licenseExpiry: data.licenseExpiry,
-      licenseStatus: data.licenseStatus,
-      demoMode: data.demoMode,
-      subscriptionPrice: data.subscriptionPrice,
-      subscriptionType: data.subscriptionType,
-      totalPaid: data.totalPaid || 0
-    };
-    
-    // Firma admin kullanıcısı oluştur
-    const newUserId = 'user-' + Date.now();
-    const hashedPassword = 'demo123'; // Varsayılan şifre
-    
-    const newUser = {
-      id: newUserId,
-      email: data.ownerEmail,
-      password: hashedPassword,
-      displayName: `${data.name} Admin`,
-      role: 'firmadmin',
-      firmId: newFirm.id,
-      permissions: {
-        canSell: true,
-        canScan: true,
-        canViewRevenue: true,
-        canManageEvents: true,
-        canManageStaff: true
-      }
-    };
-    
-    // Dinamik listelere ekle ve kaydet
-    const allUsers = [...dynamicUsers, newUser];
-    const allFirms = [...dynamicFirms, newFirm];
-    
-    saveDynamicData(allUsers, allFirms);
-    
-    return newFirm;
+    return this.fetch('/firms', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   async deleteFirm(firmId: string) {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return { success: true };
+    return this.fetch(`/firms/${firmId}`, {
+      method: 'DELETE',
+    });
   }
 
   async getLogs() {
-    await new Promise(resolve => setTimeout(resolve, 400));
-    return [
-      {
-        id: 'demo-log-1',
-        action: 'Demo Log',
-        entityType: 'system',
-        entityId: 'demo-1',
-        details: 'Demo log kaydı',
-        timestamp: new Date().toISOString()
-      }
-    ];
+    return this.fetch('/logs');
   }
 }
 
-export const api = new StandaloneApiService();
+export const api = new ApiService();
