@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import { fileURLToPath } from 'url';
 // import { createServer as createViteServer } from 'vite'; // Disabled for deployment
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -40,6 +41,9 @@ app.post('/api/auth/login', (req, res) => {
 app.post('/api/auth/register', (req, res) => {
   res.json({ message: 'Database temporarily disabled' });
 });
+
+// Get __dirname equivalent in ES module
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Serve static files
 app.use(express.static(path.resolve(__dirname, 'dist')));
