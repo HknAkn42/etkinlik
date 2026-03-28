@@ -1,4 +1,4 @@
-// Mock API - Vercel serverless çalışmadığı için geçici çözüm
+// Standalone Frontend - Hiçbir API çağrısı yapmadan
 const mockUsers = [
   {
     id: 'superadmin-1',
@@ -43,7 +43,7 @@ const mockFirm = {
   demoMode: false
 };
 
-class MockApiService {
+class StandaloneApiService {
   private token: string | null = null;
 
   setToken(token: string | null) {
@@ -62,208 +62,224 @@ class MockApiService {
     return this.token;
   }
 
-  private async request(path: string, options: RequestInit = {}) {
-    // Mock API - production'da gerçek API çağrıları
-    if (path.includes('/api/auth/login')) {
-      const { email, password } = JSON.parse(options.body as string);
-      const user = mockUsers.find(u => u.email === email && u.password === password);
-      
-      if (!user) {
-        throw new Error('Geçersiz e-posta veya şifre');
-      }
-      
-      const token = 'mock-token-' + user.id;
-      this.setToken(token);
-      
-      return {
-        id: user.id,
-        email: user.email,
-        displayName: user.displayName,
-        role: user.role,
-        firmId: user.firmId,
-        permissions: user.permissions,
-        token
-      };
-    }
-
-    if (path.includes('/api/validate-ticket')) {
-      return {
-        success: true,
-        ticket: {
-          id: 'demo-ticket-1',
-          customerName: 'Demo Müşteri',
-          customerPhone: '05551234567',
-          eventTitle: 'Demo Etkinlik',
-          eventDate: new Date().toISOString(),
-          eventLocation: 'Demo Mekan',
-          status: 'validated'
-        }
-      };
-    }
-
-    if (path.includes('/api/approve-payment')) {
-      return {
-        success: true,
-        message: 'Ödeme onayı başarılı'
-      };
-    }
-
-    // Diğer API çağrıları için mock veriler
-    if (path.includes('/api/me')) {
-      const token = this.getToken();
-      if (!token) throw new Error('Token bulunamadı');
-      
-      const user = mockUsers.find(u => token.includes(u.id));
-      if (!user) throw new Error('Kullanıcı bulunamadı');
-      
-      return user;
-    }
-
-    if (path.includes('/api/firms')) {
-      return mockFirm;
-    }
-
-    // Default mock response
-    return { success: true };
-  }
-
+  // Hiçbir fetch çağrısı yapmıyor - her şey mock
   async login(email: string, password: string) {
-    return this.request('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
+    // Simüle edilmiş async bekleme
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const user = mockUsers.find(u => u.email === email && u.password === password);
+    
+    if (!user) {
+      throw new Error('Geçersiz e-posta veya şifre');
+    }
+    
+    const token = 'mock-token-' + user.id;
+    this.setToken(token);
+    
+    return {
+      id: user.id,
+      email: user.email,
+      displayName: user.displayName,
+      role: user.role,
+      firmId: user.firmId,
+      permissions: user.permissions,
+      token
+    };
   }
 
   async logout() {
+    await new Promise(resolve => setTimeout(resolve, 200));
     this.setToken(null);
   }
 
   async getMe() {
-    return this.request('/api/me');
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    const token = this.getToken();
+    if (!token) throw new Error('Token bulunamadı');
+    
+    const user = mockUsers.find(u => token.includes(u.id));
+    if (!user) throw new Error('Kullanıcı bulunamadı');
+    
+    return user;
   }
 
   async getFirm(firmId: string) {
-    return this.request(`/api/firms/${firmId}`);
+    await new Promise(resolve => setTimeout(resolve, 300));
+    return mockFirm;
   }
 
   async updateFirm(firmId: string, data: any) {
-    return this.request(`/api/firms/${firmId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return { ...mockFirm, ...data };
   }
 
   async validateTicket(qrData: string) {
-    return this.request('/api/validate-ticket', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ qrData })
-    });
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // QR veriyi parse et
+    let ticketData;
+    try {
+      ticketData = JSON.parse(qrData);
+    } catch (error) {
+      throw new Error('Geçersiz QR kod formatı');
+    }
+
+    return {
+      success: true,
+      ticket: {
+        id: ticketData.ticketId || 'demo-ticket-1',
+        customerName: 'Demo Müşteri',
+        customerPhone: '05551234567',
+        eventTitle: 'Demo Etkinlik',
+        eventDate: new Date().toISOString(),
+        eventLocation: 'Demo Mekan',
+        status: 'validated'
+      }
+    };
   }
 
   async approvePayment(data: any) {
-    return this.request('/api/approve-payment', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return {
+      success: true,
+      message: 'Ödeme onayı başarılı'
+    };
   }
 
   async createLog(data: any) {
-    return this.request('/api/logs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
+    await new Promise(resolve => setTimeout(resolve, 200));
+    return { success: true };
   }
 
   async getStats() {
-    return this.request('/api/stats');
+    await new Promise(resolve => setTimeout(resolve, 400));
+    return {
+      totalRevenue: 15000,
+      totalTickets: 150,
+      activeEvents: 5,
+      totalUsers: 25
+    };
   }
 
   async getFirms() {
-    return this.request('/api/firms');
+    await new Promise(resolve => setTimeout(resolve, 300));
+    return [mockFirm];
   }
 
   async getEvents() {
-    return this.request('/api/events');
+    await new Promise(resolve => setTimeout(resolve, 400));
+    return [
+      {
+        id: 'demo-event-1',
+        title: 'Demo Etkinlik',
+        description: 'Bu bir demo etkinliktir',
+        date: new Date().toISOString(),
+        location: 'Demo Mekan',
+        category: 'Konser',
+        firmId: 'demo-firm-1',
+        status: 'active',
+        tables: []
+      }
+    ];
   }
 
   async createEvent(data: any) {
-    return this.request('/api/events', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return { id: 'new-event-1', ...data };
   }
 
   async updateEvent(id: string, data: any) {
-    return this.request(`/api/events/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return { id, ...data };
   }
 
   async deleteEvent(id: string) {
-    return this.request(`/api/events/${id}`, {
-      method: 'DELETE'
-    });
+    await new Promise(resolve => setTimeout(resolve, 300));
+    return { success: true };
   }
 
   async getSales() {
-    return this.request('/api/sales');
+    await new Promise(resolve => setTimeout(resolve, 400));
+    return [
+      {
+        id: 'demo-sale-1',
+        eventId: 'demo-event-1',
+        customerName: 'Demo Müşteri',
+        customerPhone: '05551234567',
+        items: [],
+        totalAmount: 299,
+        status: 'completed',
+        createdAt: new Date().toISOString()
+      }
+    ];
   }
 
   async createSale(data: any) {
-    return this.request('/api/sales', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return { id: 'new-sale-1', ...data };
   }
 
   async getStaff() {
-    return this.request('/api/staff');
+    await new Promise(resolve => setTimeout(resolve, 300));
+    return [
+      {
+        id: 'demo-staff-1',
+        email: 'staff@demo.com',
+        displayName: 'Demo Personel',
+        role: 'staff',
+        permissions: { canSell: true, canScan: true }
+      }
+    ];
   }
 
   async createStaff(data: any) {
-    return this.request('/api/staff', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return { id: 'new-staff-1', ...data };
   }
 
   async deleteStaff(id: string) {
-    return this.request(`/api/staff/${id}`, {
-      method: 'DELETE'
-    });
+    await new Promise(resolve => setTimeout(resolve, 300));
+    return { success: true };
   }
 
   async getTickets() {
-    return this.request('/api/tickets');
+    await new Promise(resolve => setTimeout(resolve, 400));
+    return [
+      {
+        id: 'demo-ticket-1',
+        eventId: 'demo-event-1',
+        customerName: 'Demo Müşteri',
+        customerPhone: '05551234567',
+        status: 'valid',
+        createdAt: new Date().toISOString()
+      }
+    ];
   }
 
   async createTicket(data: any) {
-    return this.request('/api/tickets', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return { id: 'new-ticket-1', ...data };
   }
 
   async checkInTicket(id: string) {
-    return this.request(`/api/tickets/${id}/checkin`, {
-      method: 'POST'
-    });
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return { success: true, status: 'used' };
   }
 
   async getLogs() {
-    return this.request('/api/logs');
+    await new Promise(resolve => setTimeout(resolve, 400));
+    return [
+      {
+        id: 'demo-log-1',
+        action: 'Demo Log',
+        entityType: 'system',
+        entityId: 'demo-1',
+        details: 'Demo log kaydı',
+        timestamp: new Date().toISOString()
+      }
+    ];
   }
 }
 
-export const api = new MockApiService();
+export const api = new StandaloneApiService();
