@@ -48,26 +48,15 @@ export interface Table {
 
 export interface Event {
   id: string;
+  firmId: string;
   title: string;
   description: string;
   date: string;
   location: string;
   status: 'draft' | 'published' | 'cancelled';
   category: string;
-  firmId: string;
   createdAt: string;
   tables?: Table[];
-  firmName?: string;
-  firmLogo?: string;
-}
-  firmId: string;
-  title: string;
-  description: string;
-  date: string;
-  location: string;
-  tables: Table[];
-  status: 'draft' | 'published' | 'cancelled';
-  category?: string;
   firmName?: string;
   firmLogo?: string;
 }
@@ -128,4 +117,38 @@ export interface Log {
   entityId: string;
   details: string;
   timestamp: string;
+}
+
+// Scanner bileşeni için ek type'lar
+export interface ScanData {
+  ticketId: string;
+  ticketType: string;
+  eventId: string;
+  userId: string;
+  scannedAt: string;
+  status: 'valid' | 'used' | 'refunded';
+}
+
+export interface QRCodeData {
+  eventId: string;
+  ticketNumber: string;
+  ticketType: string;
+  customerName?: string;
+  tableName?: string;
+}
+
+// API Response types
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  error?: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }

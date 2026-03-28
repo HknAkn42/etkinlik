@@ -267,6 +267,28 @@ class StandaloneApiService {
     return { success: true, status: 'used' };
   }
 
+  async createFirm(data: any) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return {
+      id: 'new-firm-' + Date.now(),
+      name: data.name,
+      ownerEmail: data.ownerEmail,
+      createdAt: new Date().toISOString(),
+      status: 'active',
+      licenseExpiry: data.licenseExpiry,
+      licenseStatus: data.licenseStatus,
+      demoMode: data.demoMode,
+      subscriptionPrice: data.subscriptionPrice,
+      subscriptionType: data.subscriptionType,
+      totalPaid: data.totalPaid || 0
+    };
+  }
+
+  async deleteFirm(firmId: string) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return { success: true };
+  }
+
   async getLogs() {
     await new Promise(resolve => setTimeout(resolve, 400));
     return [
