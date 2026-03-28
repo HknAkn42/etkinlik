@@ -33,10 +33,20 @@ export default function Layout({ children }: LayoutProps) {
 
   useEffect(() => {
     const checkAuth = async () => {
-      // Don't set loading to true if we already have a profile and are just navigating
-      if (!userProfile) setLoading(true);
-      
+      setLoading(true);
       try {
+        // Token yoksa doğrudan login sayfasına yönlendir
+        const token = api.getToken();
+        if (!token && location.pathname !== '/login') {
+          navigate('/login');
+          return;
+        }
+        
+        if (!token) {
+          setLoading(false);
+          return;
+        }
+        
         const profile = await api.getMe();
         setUserProfile(profile);
         
