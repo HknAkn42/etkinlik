@@ -43,6 +43,10 @@ const mockFirm = {
   demoMode: false
 };
 
+// Yeni oluşturulan firmalar için kullanıcılar
+let dynamicUsers = [...mockUsers];
+let dynamicFirms = [mockFirm];
+
 class StandaloneApiService {
   private token: string | null = null;
 
@@ -67,7 +71,9 @@ class StandaloneApiService {
     // Simüle edilmiş async bekleme
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    const user = mockUsers.find(u => u.email === email && u.password === password);
+    // Static kullanıcılar + dinamik kullanıcılar
+    const allUsers = [...mockUsers, ...dynamicUsers];
+    const user = allUsers.find(u => u.email === email && u.password === password);
     
     if (!user) {
       throw new Error('Geçersiz e-posta veya şifre');
@@ -98,7 +104,9 @@ class StandaloneApiService {
     const token = this.getToken();
     if (!token) throw new Error('Token bulunamadı');
     
-    const user = mockUsers.find(u => token.includes(u.id));
+    // Static kullanıcılar + dinamik kullanıcılar
+    const allUsers = [...mockUsers, ...dynamicUsers];
+    const user = allUsers.find(u => token.includes(u.id));
     if (!user) throw new Error('Kullanıcı bulunamadı');
     
     return user;
@@ -106,7 +114,12 @@ class StandaloneApiService {
 
   async getFirm(firmId: string) {
     await new Promise(resolve => setTimeout(resolve, 300));
-    return mockFirm;
+    
+    // Static firm + dinamik firmalar
+    const allFirms = [mockFirm, ...dynamicFirms];
+    const firm = allFirms.find(f => f.id === firmId);
+    
+    return firm || mockFirm;
   }
 
   async updateFirm(firmId: string, data: any) {
@@ -269,7 +282,8 @@ class StandaloneApiService {
 
   async createFirm(data: any) {
     await new Promise(resolve => setTimeout(resolve, 500));
-    return {
+    
+    const newFirm = {
       id: 'new-firm-' + Date.now(),
       name: data.name,
       ownerEmail: data.ownerEmail,
@@ -282,6 +296,32 @@ class StandaloneApiService {
       subscriptionType: data.subscriptionType,
       totalPaid: data.totalPaid || 0
     };
+    
+    // Firma admin kullanıcısı oluştur
+    const newUserId = 'user-' + Date.now();
+    const hashedPassword = 'demo123'; // Varsayılan şifre
+    
+    const newUser = {
+      id: newUserId,
+      email: data.ownerEmail,
+      password: hashedPassword,
+      displayName: `${data.name} Admin`,
+      role: 'firmadmin',
+      firmId: newFirm.id,
+      permissions: {
+        canSell: true,
+        canScan: true,
+        canViewRevenue: true,
+        canManageEvents: true,
+        canManageStaff: true
+      }
+    };
+    
+    // Dinamik listelere ekle
+    dynamicFirms.push(newFirm);
+    dynamicUsers.push(newUser);
+    
+    return newFirm;
   }
 
   async deleteFirm(firmId: string) {
